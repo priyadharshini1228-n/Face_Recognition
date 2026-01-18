@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Face Verification</title>
+</head>
+<body>
+
+<h2>Face Verification</h2>
+
+<video id="video" width="320" height="240" autoplay></video>
+<br><br>
+<button onclick="capture()">Capture & Verify</button>
+
+<canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+<p id="result"></p>
+
+<script>
+const video = document.getElementById("video");
+const result = document.getElementById("result");
+
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream)
+  .catch(err => alert("Camera access denied"));
+
+function capture() {
+  const canvas = document.getElementById("canvas");
+  canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+
+  canvas.toBlob(blob => {
+    const formData = new FormData();
+    formData.append("image", blob, "face.jpg");
+
+    fetch("/verify", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      result.innerText = data.verified
+        ? "✅ Face Matched"
+        : "❌ Face Not Matched";
+    })
+    .catch(() => {
+      result.innerText = "Error verifying face";
+    });
+  }, "image/jpeg");
+}
+</script>
+
+</body>
+</html>

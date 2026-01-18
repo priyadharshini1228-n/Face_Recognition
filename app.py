@@ -1,49 +1,49 @@
-import threading
-import numpy as np
+from flask import Flask, request, jsonify, render_template
 import cv2
+import numpy as np
 from deepface import DeepFace
+import os
 
-# Initialize camera
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+app = Flask(__name__)
 
-count = 0
-face_match = False
-# Ensure this path is correct
-ref_img = cv2.imread("static/reference.jpg") 
+# Load reference image ONCE at startup
+REFERENCE_IMAGE_PATH = "static/reference.jpg"
 
-def check_face(frame):
-    global face_match
+if not os.path.exists(REFERENCE_IMAGE_PATH):
+    raise FileNotFoundError("Reference image not found at static/reference.jpg")
+
+ref_img = cv2.imread(REFERENCE_IMAGE_PATH)
+
+@app.route("/", methods=["GET"])
+def health_check():
+    return jsonify({"status": "Face Verification API running"}), 200
+
+@app.route("/ui", methods=["GET"])
+def ui():
+    return render_template("index.html")
+
+@app.route("/verify", methods=["POST"])
+def verify_face():
+    if "image" not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+
+    file = request.files["image"]
+    npimg = np.frombuffer(file.read(), np.uint8)
+    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+
     try:
-        # DeepFacqe.verify returns a dict; check the 'verified' key
-        result = DeepFace.verify(frame, ref_img.copy(), enforce_detection=False)
-        face_match = result['verified']
+        result = DeepFace.verify(
+            img,
+            ref_img,
+            enforce_detection=False
+        )
+        return jsonify({
+            "verified": result["verified"]
+        })
     except Exception as e:
-        face_match = False
+        return jsonify({"error": str(e)}), 500
 
-while True:
-    ret, frame = cap.read()
-    
-    if ret:
-        # Run verification every 30 frames to avoid lag
-        if count % 30 == 0:
-            threading.Thread(target=check_face, args=(frame.copy(),)).start()
-        
-        count += 1 # Corrected increment
 
-        # Visual feedback
-        if face_match:
-            cv2.putText(frame, "MATCH!", (20, 450), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
-        else:
-            cv2.putText(frame, "NO MATCH", (20, 450), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
-
-        cv2.imshow("video", frame)
-
-    # Press 'q' to quit
-    key = cv2.waitKey(1) # Changed from 0 to 1 for live video
-    if key == ord("q"):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)

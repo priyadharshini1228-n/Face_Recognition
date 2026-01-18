@@ -1,6 +1,6 @@
+flask
 numpy
-opencv-python 
+opencv-python-headless
 deepface
-tensorflow == 2.20.0
+tensorflow==2.20.0
 tf-keras
-
