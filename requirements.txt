@@ -1,5 +1,6 @@
 numpy
 opencv-python 
 deepface
-tensorflow-cpu
+tensorflow == 2.20.0
+tf-keras
 
