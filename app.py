@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, render_template
-import cv2
-import numpy as np
-from deepface import DeepFace
 import os
+import numpy as np
+import cv2
+from deepface import DeepFace
+
 
 app = Flask(__name__)
 
