@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  face_recognition:
+    container_name: face_recognition_app
+    build: .
+    ports: 
+      - "4000:4000"
+    devices:
+      - "/dev/video0:/dev/video0"
+    volumes:
+      - .:/app
+    stdin_open: true
+    tty: true
